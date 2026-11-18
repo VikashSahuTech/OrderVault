@@ -149,7 +149,7 @@ export async function fetchOrderEmails(token: string, onProgress: (done:number,t
     if (ids.length >= max) break
   } while (pageToken)
   if (ids.length > max) ids.length = max
-  log?.(ids.length ? 'SUCCESS' : 'WARN', ids.length ? `Found ${ids.length} matching messages${ids.length >= max ? ` (stopped at the ${max} limit; use a shorter Scan range to cover recent mail)` : ''}. Reading them one by one…` : 'No matching messages found.')
+  log?.(ids.length ? 'SUCCESS' : 'WARN', ids.length ? `Found ${ids.length} matching messages${ids.length >= max ? ` (stopped at the ${max} limit; use a shorter Scan range to cover recent mail)` : ''}. Reading them now…` : 'No matching messages found.')
 
   let failed = 0
   let streak = 0
