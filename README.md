@@ -6,7 +6,7 @@ This repository holds two parts that work together:
 
 | Folder | What it is |
 | --- | --- |
-| [`ordervault/`](ordervault/) | The web app (React, TypeScript, Vite). Reads order emails from your Gmail (read-only) and keeps them in your browser. |
+| [`ordervault-pwa/`](ordervault-pwa/) | The web app (React, TypeScript, Vite). Reads order emails from your Gmail (read-only) and keeps them in your browser. |
 | [`ordervault-extension/`](ordervault-extension/) | A Chrome / Edge extension. Reads your Amazon, Flipkart and Myntra order pages while you are signed in, and keeps live delivery status on your device. |
 
 The extension can export a file that the web app imports ("Download for OrderVault" in the extension, then Import in the app).
@@ -21,9 +21,9 @@ The extension can export a file that the web app imports ("Download for OrderVau
 
 Each folder has its own README with setup steps:
 
-- Web app: [`ordervault/README.md`](ordervault/README.md)
+- Web app: [`ordervault-pwa/README.md`](ordervault-pwa/README.md)
 - Extension: [`ordervault-extension/README.md`](ordervault-extension/README.md)
 
 ## Licence
 
-MIT, see [`ordervault/LICENSE`](ordervault/LICENSE).
+MIT, see [`LICENSE`](LICENSE).
