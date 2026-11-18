@@ -1,3 +1,5 @@
+import { mapPool } from './pool'
+
 declare global {
   interface Window { google?: any }
 }
@@ -118,6 +120,7 @@ export interface FetchOptions {
 const MARKETPLACE_SENDERS = 'from:amazon.in OR from:amazon.com OR from:flipkart.com OR from:myntra.com'
 // Any shop's order mail usually has one of these in the subject, so this also finds stores we don't know by name.
 const ORDER_SUBJECTS = 'order OR shipped OR shipment OR dispatched OR delivered OR "out for delivery" OR refund OR return OR cancelled OR purchase OR "thank you for shopping"'
+const FETCH_CONCURRENCY = 6
 export async function fetchOrderEmails(token: string, onProgress: (done:number,total:number)=>void, opts: FetchOptions = {}) {
   const { log } = opts
   const max = opts.max ?? 2000
@@ -141,15 +144,16 @@ export async function fetchOrderEmails(token: string, onProgress: (done:number,t
   if (ids.length > max) ids.length = max
   log?.(ids.length ? 'SUCCESS' : 'WARN', ids.length ? `Found ${ids.length} matching messages${ids.length >= max ? ` (stopped at the ${max} limit; use a shorter Scan range to cover recent mail)` : ''}. Reading them one by one…` : 'No matching messages found.')
 
-  const emails: RawEmail[] = []
   let failed = 0
   let streak = 0
-  for (let i = 0; i < ids.length; i += 1) {
+  // Several emails are read at once. One at a time was ~1 second each; Gmail allows far more than that.
+  const results = await mapPool(ids, FETCH_CONCURRENCY, async (id): Promise<RawEmail | null> => {
     try {
-      const msg = await gmailFetch(`messages/${ids[i]}?format=full`, token, log)
+      const msg = await gmailFetch(`messages/${id}?format=full`, token, log)
       const payload = msg.payload || {}
       const from = header(payload.headers, 'From')
-      emails.push({
+      streak = 0
+      return {
         id: msg.id,
         subject: header(payload.headers, 'Subject'),
         from,
@@ -157,8 +161,7 @@ export async function fetchOrderEmails(token: string, onProgress: (done:number,t
         body: toText(collectBodies(payload, 'both').join('\n')),
         snippet: msg.snippet || '',
         html: /myntra/i.test(from) ? collectBodies(payload, 'text/html').join('\n') : undefined
-      })
-      streak = 0
+      }
     } catch (e: any) {
       // A deleted or unreadable message shouldn't throw away everything read so far,
       // but an expired token or a run of failures means stop.
@@ -166,11 +169,13 @@ export async function fetchOrderEmails(token: string, onProgress: (done:number,t
       failed += 1; streak += 1
       log?.('WARN', `Skipped one email (${e?.message || 'unreadable'}).`)
       if (streak >= 5) throw new Error(`Gmail kept failing: ${e?.message || 'unknown error'}`)
+      return null
     }
-    onProgress(i + 1, ids.length)
-    if ((i + 1) % 50 === 0 && i + 1 < ids.length) log?.('INFO', `Read ${i + 1} of ${ids.length} emails…`)
-    await sleep(60) // gentle pacing to stay under the per-minute quota
-  }
+  }, done => {
+    onProgress(done, ids.length)
+    if (done % 50 === 0 && done < ids.length) log?.('INFO', `Read ${done} of ${ids.length} emails…`)
+  })
+  const emails = results.filter((m): m is RawEmail => m !== null)
   if (ids.length) log?.(failed ? 'WARN' : 'SUCCESS', `Read ${emails.length} of ${ids.length} emails${failed ? ` (${failed} skipped)` : ''}.`)
   return emails
 }
