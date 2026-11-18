@@ -3,9 +3,10 @@ name: Deploy web app to GitHub Pages
 on:
   push:
     branches: [main]
-    paths:
-      - 'ordervault-pwa/**'
-      - '.github/workflows/deploy-pwa.yml'
+    paths-ignore:
+      - '**.md'
+      - 'assets/**'
+      - 'LICENSE'
   workflow_dispatch:
 
 permissions:
@@ -20,16 +21,13 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ordervault-pwa
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: ordervault-pwa/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npm run build
         env:
@@ -38,7 +36,7 @@ jobs:
       - run: cp dist/index.html dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ordervault-pwa/dist
+          path: dist
 
   deploy:
     needs: build
