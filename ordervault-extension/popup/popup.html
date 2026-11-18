@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OrderVault Tracker</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <label class="switch dev-toggle" title="Show the technical details: per-shop read lines, live progress and steps, and the history of reads">
+      <span class="lbl">Developer mode</span>
+      <input type="checkbox" id="dev" role="switch" aria-label="Developer mode">
+      <span class="track" aria-hidden="true"></span>
+    </label>
+    <h1>Order<span>Vault</span> Tracker</h1>
+    <div class="sub" id="sub">Reading your orders…</div>
+    <div class="reads" id="reads"></div>
+  </header>
+
+  <section id="actions">
+    <button id="read" class="primary">Read this page now</button>
+    <!-- One button per shop: it opens the orders page in a background tab, reads it, and closes the tab. -->
+    <div class="open-row" id="open-row"></div>
+    <label class="speed" title="How many tabs read at once. Faster looks more like a burst of traffic to the shop.">
+      Speed
+      <select id="speed">
+        <option value="careful">Careful (2 tabs)</option>
+        <option value="normal" selected>Normal (4 tabs)</option>
+        <option value="fast">Fast (6 tabs)</option>
+      </select>
+    </label>
+    <div class="crawl">
+      <button id="crawl-stop" class="soft danger" type="button" hidden>Stop</button>
+      <div id="crawl-msg" class="crawl-msg"></div>
+    </div>
+  </section>
+  <div id="note" class="note" hidden></div>
+
+  <section>
+    <div class="search">
+      <input id="q" type="search" placeholder="Search orders: product, shop, order number, status, date" autocomplete="off" spellcheck="false" aria-label="Search orders">
+      <div id="q-count" class="q-count" hidden></div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <ul id="list" class="list"></ul>
+    <div id="empty" class="empty" hidden></div>
+  </section>
+
+  <div id="attention" class="attention" hidden></div>
+
+  <section class="foot">
+    <button id="export" class="soft">Download for OrderVault</button>
+    <button id="clear" class="soft danger">Clear all</button>
+    <select id="clear-shop" class="soft danger" aria-label="Clear the orders of one shop">
+      <option value="">Clear one shop</option>
+      <option value="Amazon">Amazon only</option>
+      <option value="Flipkart">Flipkart only</option>
+      <option value="Myntra">Myntra only</option>
+    </select>
+  </section>
+  <details class="help history" id="history-note" hidden>
+    <summary>Recent reads</summary>
+    <ul id="history-list"></ul>
+    <label class="switch notify"><input type="checkbox" id="notify" role="switch" aria-label="Show a desktop notice when a read finishes"><span class="track" aria-hidden="true"></span><span class="lbl">Show a desktop notice when a read finishes</span></label>
+  </details>
+  <details class="help" id="unmatched-note" hidden>
+    <summary>Links not recognised</summary>
+    <p>The page had links that look like orders or bookings (a Flipkart Minutes order, a flight) but carry no order number the reader knows, so they were not saved. This shows only the shape of those addresses. Send it, with a screenshot of one such order, to have them added.</p>
+    <textarea id="unmatched-text" readonly rows="6"></textarea>
+  </details>
+  <details class="help" id="unread-note" hidden>
+    <summary>Some orders have no status</summary>
+    <p>These are the lines those orders' cards show (no names of products). Send this list if the statuses should be something else.</p>
+    <textarea id="unread-text" readonly rows="10"></textarea>
+  </details>
+  <details class="help" id="help" hidden>
+    <summary>A page was not recognised</summary>
+    <p>Shops change their pages. Copy this outline (it has no text from your orders, only page structure) and send it to the developer to update the reader.</p>
+    <textarea id="outline" readonly rows="6"></textarea>
+    <button id="copy" class="soft">Copy outline</button>
+  </details>
+  <script src="../lib/common.js"></script>
+  <script src="../lib/merge.js"></script>
+  <script src="../lib/search.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

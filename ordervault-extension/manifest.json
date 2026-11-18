@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "OrderVault Tracker",
+  "version": "0.1.0",
+  "description": "Reads your Amazon, Flipkart and Myntra order pages while you browse them, and keeps the live delivery status on your device.",
+  "minimum_chrome_version": "110",
+  "permissions": ["storage", "alarms", "notifications", "scripting", "declarativeNetRequestWithHostAccess"],
+  "host_permissions": [
+    "https://*.amazon.in/*",
+    "https://*.flipkart.com/*",
+    "https://*.myntra.com/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://*.amazon.in/*", "https://*.flipkart.com/*", "https://*.myntra.com/*"],
+      "js": ["lib/common.js", "lib/amazon.js", "lib/flipkart.js", "lib/myntra.js", "content/reader.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": { "default_title": "OrderVault Tracker", "default_popup": "popup/popup.html" }
+}
