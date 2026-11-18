@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, Archive, ArrowDownToLine, ArrowUpFromLine, CheckCircle2, ChevronDown, CircleHelp, Filter, Inbox, Package, Plus, RefreshCw, Search, ShieldCheck, ShoppingBag, Sparkles, Truck, Wallet, X } from 'lucide-react'
 import { getOrders, getUserData, putOrders, putUser, putUsers, deleteOrder, deleteUser, clearOrders, deleteStaleOrders } from './db'
-import { fetchOrderEmails, isConfigured, requestGmailToken } from './gmail'
+import { fetchOrderEmails, getClientId, getStoredClientId, isConfigured, isValidClientId, requestGmailToken, saveClientId } from './gmail'
 import type { Logger } from './gmail'
 import { PARSER_VERSION, detectStore, mergeOrder, parseEmails } from './parser'
 import { parseBackup } from './backup'
@@ -54,7 +54,17 @@ function App() {
   const [error,setError] = useState('')
   const [lastSync,setLastSync] = useState(()=>readPref('ov-last-sync',''))
   const [showSettings,setShowSettings] = useState(false)
-  const [clientId,setClientId] = useState(import.meta.env.VITE_GOOGLE_CLIENT_ID || '')
+  const [clientId,setClientId] = useState(()=>getClientId())
+  const [configOk,setConfigOk] = useState(()=>isConfigured())
+  const [clientIdNote,setClientIdNote] = useState('')
+  function applyClientId(forget=false) {
+    const value = forget ? '' : clientId.trim()
+    if (value && !isValidClientId(value)) { setClientIdNote('That does not look like a Client ID. It should end with .apps.googleusercontent.com'); return }
+    saveClientId(value)
+    setClientId(getClientId())
+    setConfigOk(isConfigured())
+    setClientIdNote(value ? 'Saved in this browser. You can now connect Gmail.' : 'Removed. The value from .env (if any) is used again.')
+  }
   const [logLines,setLogLines] = useState<LogLine[]>([])
   const [logOpen,setLogOpen] = useState(false)
 
@@ -251,7 +261,6 @@ function App() {
     if(!confirm('Delete all locally stored OrderVault data from this browser: orders, notes, links, warranties and corrections? This cannot be undone.')) return
     await clearOrders(); setSelectedId(null); await reload(); setMessage('Local order database cleared.')
   }
-  const configOk = isConfigured()
   // Sidebar shortcuts show the whole list for that status, so they reset the other filters.
   const goTab = (t:Tab) => { clearFilters(); setTab(t); setView('orders'); document.getElementById('orders')?.scrollIntoView({behavior:'smooth'}) }
 
@@ -339,7 +348,7 @@ function App() {
     {form&&(form.mode==='add'||editing)&&<OrderForm mode={form.mode} initial={editing} stores={storeCounts.map(([s])=>s)} onCancel={()=>setForm(null)} onSubmit={v=>void submitForm(v)}/>}
 
     {showSettings&&<div className="modal-backdrop" onClick={()=>setShowSettings(false)}><div className="modal" onClick={e=>e.stopPropagation()}><div className="modal-head"><div><h2>Setup & privacy</h2><p>Configure Gmail access and manage local data.</p></div><button className="icon-btn" onClick={()=>setShowSettings(false)} aria-label="Close"><X size={18}/></button></div>
-      <div className="setting-block"><h3>Google OAuth Client ID</h3><p>Create a Web application OAuth client in Google Cloud, then put its Client ID in your project's <code>.env</code> file as <code>VITE_GOOGLE_CLIENT_ID</code>. Restart the dev server afterwards.</p><input className="client-input" value={clientId} onChange={e=>setClientId(e.target.value)} placeholder="xxxxx.apps.googleusercontent.com"/><p className="hint">This field is informational in this build. Change the .env file and restart to apply the Client ID.</p></div>
+      <div className="setting-block"><h3>Google OAuth Client ID</h3><p>Create a Web application OAuth client in Google Cloud, add this site's address under Authorized JavaScript origins, then paste its Client ID here. It is saved only in this browser, and it is not a secret.</p><input className="client-input" value={clientId} onChange={e=>{setClientId(e.target.value); setClientIdNote('')}} onKeyDown={e=>{ if(e.key==='Enter') applyClientId() }} placeholder="xxxxx.apps.googleusercontent.com" spellCheck={false} autoComplete="off" aria-label="Google OAuth Client ID"/><div className="row-buttons"><button className="soft-btn" onClick={()=>applyClientId()}>Save Client ID</button>{getStoredClientId()&&<button className="soft-btn" onClick={()=>{setClientId(''); applyClientId(true)}}>Forget</button>}</div>{clientIdNote&&<p className="hint" role="status">{clientIdNote}</p>}<p className="hint">Developers can also set <code>VITE_GOOGLE_CLIENT_ID</code> in <code>.env</code>. A value saved here takes priority.</p></div>
       <div className="setting-block"><h3>Data controls</h3><p>Orders, notes and warranties are stored in IndexedDB on this browser profile. Clearing browser site data may delete them. Export a backup before clearing.</p><div className="row-buttons"><button className="soft-btn" onClick={exportData}><ArrowDownToLine size={15}/> Export backup</button><button className="danger-btn" onClick={wipe}>Delete local data</button></div></div>
       <div className="setting-block"><h3>Access scope</h3><div className="scope-line"><ShieldCheck size={18}/><div><b>Gmail read-only</b><p>OrderVault requests gmail.readonly. It cannot send, modify or delete messages.</p></div></div></div>
       <button className="primary full" onClick={()=>setShowSettings(false)}>Done</button>

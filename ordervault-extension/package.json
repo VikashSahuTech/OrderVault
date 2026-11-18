@@ -2,6 +2,7 @@
   "name": "ordervault-extension",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Browser extension that reads your own order pages on Amazon, Flipkart and Myntra.",
   "scripts": {
     "test": "node tests/run.js && node tests/spa.js && node tests/search.js && node tests/shops.js && node tests/tabs.js && node tests/order.js && node tests/links.js && node tests/regress.js && node tests/developer.js && node tests/kinds.js && node tests/popup.js && node tests/notice.js && node tests/crawl.js"

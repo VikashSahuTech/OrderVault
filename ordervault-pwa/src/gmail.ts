@@ -2,17 +2,37 @@ declare global {
   interface Window { google?: any }
 }
 const SCOPE = 'https://www.googleapis.com/auth/gmail.readonly'
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
+const ENV_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || ''
+const CLIENT_ID_KEY = 'ov-google-client-id'
 
+/** A client ID pasted in Setup & privacy (kept in this browser) wins over the one in .env. */
+export function getStoredClientId(): string {
+  try { return localStorage.getItem(CLIENT_ID_KEY) || '' } catch { return '' }
+}
+export function getClientId(): string {
+  return getStoredClientId() || ENV_CLIENT_ID
+}
+export function isValidClientId(id: string): boolean {
+  return /^[\w-]+\.apps\.googleusercontent\.com$/.test(id.trim()) && !id.startsWith('YOUR_')
+}
+/** Saves the pasted ID, or forgets it (empty string) so the .env value is used again. */
+export function saveClientId(id: string): void {
+  const value = id.trim()
+  try {
+    if (value) localStorage.setItem(CLIENT_ID_KEY, value)
+    else localStorage.removeItem(CLIENT_ID_KEY)
+  } catch { /* private mode: the ID only lasts until the page is closed */ }
+}
 export function isConfigured() {
-  return !!CLIENT_ID && !CLIENT_ID.startsWith('YOUR_')
+  const id = getClientId()
+  return !!id && !id.startsWith('YOUR_')
 }
 export function requestGmailToken(): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!window.google?.accounts?.oauth2) return reject(new Error('Google Identity Services did not load. Check your internet connection and refresh.'))
-    if (!isConfigured()) return reject(new Error('Add your Google OAuth Client ID to the .env file, then restart the app.'))
+    if (!isConfigured()) return reject(new Error('Add your Google OAuth Client ID in Setup & privacy, then try again.'))
     const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
+      client_id: getClientId(),
       scope: SCOPE,
       callback: (response: any) => response?.access_token ? resolve(response.access_token) : reject(new Error(response?.error_description || response?.error || 'Google authorisation failed.'))
     })
