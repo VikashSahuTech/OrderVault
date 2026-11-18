@@ -199,7 +199,7 @@ function App() {
   async function syncGmail() {
     if (!isConfigured()) {
       setConfigOk(false); setClientId(getClientId()); setError(''); setMessage('')
-      setClientIdNote('Paste your Google OAuth Client ID below, press Save Client ID, then connect Gmail again.')
+      setClientIdNote('')
       setShowSettings(true)
       return
     }
