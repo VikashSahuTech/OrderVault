@@ -49,8 +49,12 @@ class GmailError extends Error {
   constructor(message: string, readonly status: number) { super(message) }
 }
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+// When Gmail pushes back, every request waits together. Otherwise each worker keeps retrying on its own and the limit never clears.
+let pauseUntil = 0
 async function gmailFetch(path: string, token: string, log?: Logger) {
   for (let attempt = 0; ; attempt += 1) {
+    const cooling = pauseUntil - Date.now()
+    if (cooling > 0) await sleep(cooling)
     const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/${path}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -61,8 +65,11 @@ async function gmailFetch(path: string, token: string, log?: Logger) {
     if (!rateLimited || attempt >= 6) throw new GmailError(message, response.status)
     // Back off (10s, 20s, 30s...) so the per-minute quota can refill, then retry.
     const wait = 10 * (attempt + 1)
-    log?.('WARN', `Gmail rate limit reached. Waiting ${wait}s, then retrying (${attempt + 1}/6)…`)
-    await sleep(wait * 1000)
+    if (Date.now() >= pauseUntil) {
+      pauseUntil = Date.now() + wait * 1000
+      log?.('WARN', `Gmail rate limit reached. Pausing ${wait}s, then continuing (retry ${attempt + 1}/6)…`)
+    }
+    await sleep(Math.max(0, pauseUntil - Date.now()))
   }
 }
 function decodeBase64Url(value = ''): string {
@@ -120,7 +127,7 @@ export interface FetchOptions {
 const MARKETPLACE_SENDERS = 'from:amazon.in OR from:amazon.com OR from:flipkart.com OR from:myntra.com'
 // Any shop's order mail usually has one of these in the subject, so this also finds stores we don't know by name.
 const ORDER_SUBJECTS = 'order OR shipped OR shipment OR dispatched OR delivered OR "out for delivery" OR refund OR return OR cancelled OR purchase OR "thank you for shopping"'
-const FETCH_CONCURRENCY = 6
+const FETCH_CONCURRENCY = 3
 export async function fetchOrderEmails(token: string, onProgress: (done:number,total:number)=>void, opts: FetchOptions = {}) {
   const { log } = opts
   const max = opts.max ?? 2000
