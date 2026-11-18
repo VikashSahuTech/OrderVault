@@ -19,7 +19,7 @@ OrderVault gathers your Amazon, Flipkart and Myntra orders into one clean dashbo
 ![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8?logo=pwa&logoColor=white)
 ![Chrome and Edge](https://img.shields.io/badge/Chrome%20%7C%20Edge-extension-4285f4?logo=googlechrome&logoColor=white)
 
-[Get started](#get-started) · [How it works](#how-it-works) · [Privacy](#privacy-first-by-design) · [Limitations](#limitations) · [FAQ](#faq)
+[**Open the app**](https://vikashsahutech.github.io/OrderVault/) · [Get started](#get-started) · [How it works](#how-it-works) · [Privacy](#privacy-first-by-design) · [Limitations](#limitations) · [FAQ](#faq)
 
 </div>
 
